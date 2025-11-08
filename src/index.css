@@ -2,6 +2,10 @@
 @tailwind components;
 @tailwind utilities;
 
+* {
+  font-family: 'Federo', sans-serif;
+}
+
 .btn {
     background-color: #3b82f6;
     color: white;
@@ -12,8 +16,89 @@
     font-weight: 500;
     transition: background 0.2s ease;
   }
-  
+
   .btn:hover {
     background-color: #2563eb;
   }
+
+/* Sidebar Styles */
+.sidebar {
+  width: 16rem;
+  height: calc(100vh - 40px);
+  background-color: rgba(247, 232, 156, 0.95);
+  color: #1f2937;
+  position: fixed;
+  left: 20px;
+  top: 20px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+  z-index: 1000;
+  backdrop-filter: blur(10px);
+  border-radius: 12px;
+}
+
+.sidebar-header {
+  padding: 1.5rem;
+  border-bottom: 1px solid #d4c080;
+  text-align: center;
+}
+
+.sidebar-title {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #1f2937;
+}
+
+.sidebar-nav {
+  flex: 1;
+  padding: 1rem 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebar-item {
+  width: calc(100% - 2rem);
+  padding: 1rem 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: none;
+  border: 2px solid white;
+  color: #1f2937;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin: 0.5rem 1rem;
+  border-radius: 8px;
+}
+
+.sidebar-item:hover {
+  background-color: #FDF8E1;
+}
+
+.sidebar-item.active {
+  background-color: white;
+  border-color: white;
+}
+
+.sidebar-icon {
+  font-size: 1.5rem;
+}
+
+.sidebar-label {
+  font-size: 1.125rem;
+  font-weight: 500;
+}
+
+.sidebar-footer {
+  padding: 1rem;
+  border-top: 1px solid #d4c080;
+  font-size: 0.875rem;
+  color: #4b5563;
+}
+
+.main-content {
+  margin-left: 0;
+  flex: 1;
+}
   

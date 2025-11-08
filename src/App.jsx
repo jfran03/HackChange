@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import AlertButtons from "./components/AlertButtons";
+import Sidebar from "./components/Sidebar";
 
 const MapView = () => {
   const [map, setMap] = useState(null);
@@ -56,10 +57,18 @@ const MapView = () => {
     };
   }, [map, alertType]);
 
+  const handleNavigation = (itemName) => {
+    console.log("Navigating to:", itemName);
+    // TODO: Implement navigation logic for each menu item
+  };
+
   return (
     <div>
-      <AlertButtons onSelect={setAlertType} />
-      <div id="map" style={{ height: "80vh", width: "100%" }}></div>
+      <Sidebar onNavigate={handleNavigation} />
+      <div className="main-content">
+        <AlertButtons onSelect={setAlertType} />
+        <div id="map" style={{ height: "100vh", width: "100%" }}></div>
+      </div>
     </div>
   );
 };
