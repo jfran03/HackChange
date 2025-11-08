@@ -52,7 +52,7 @@ const MapView = () => {
 
   return (
     <div>
-      <div id="map" style={{ height: "80vh", width: "100%" }}></div>
+      <div id="map" className="h-screen w-screen flex"></div>
       {alertMarker && map && <AlertMarker map={map} position={markerPos} onSelect={specifyAlert} />}
     </div>
   );
