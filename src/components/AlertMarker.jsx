@@ -44,6 +44,9 @@ const AlertMarker = ({ map, position, onSelect }) => {
       <button className="btn" onClick={() => onSelect("Medical Assistance")}>
         🚑 Medical
       </button>
+      <button className="btn" onClick={() => onSelect("Cancel")}>
+        Cancel
+      </button>
     </div>
   );
 };

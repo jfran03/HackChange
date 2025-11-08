@@ -31,9 +31,16 @@ const MapView = () => {
   const specifyAlert = (type) =>{  
     showMarker(false);
 
-    // send to back
-    console.log(markerPos);
-    console.log(type);
+    if (type != "Cancel"){
+      // send to back
+      L.marker([markerPos.lat, markerPos.lng])
+        .addTo(map)
+        .bindPopup(`🚨 ${type} reported here.`)
+        .openPopup();
+
+      console.log(markerPos);
+      console.log(type);
+    }
   }
 
   useEffect(() => {
@@ -51,8 +58,8 @@ const MapView = () => {
   }, [map]);
 
   return (
-    <div>
-      <div id="map" className="h-screen w-screen flex"></div>
+    <div className="h-screen w-screen flex">
+      <div id="map" className="flex-1"></div>
       {alertMarker && map && <AlertMarker map={map} position={markerPos} onSelect={specifyAlert} />}
     </div>
   );
