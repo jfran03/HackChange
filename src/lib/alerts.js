@@ -2,12 +2,19 @@ import { supabase } from "./supabaseClient";
 
 const ALERTS_TABLE = "alerts";
 
-export const createAlert = async ({ type, latitude, longitude, description = null }) => {
+export const createAlert = async ({
+  type,
+  latitude,
+  longitude,
+  description = null,
+  created_by,
+}) => {
   const payload = {
     type,
     latitude,
     longitude,
     description,
+    created_by,
   };
 
   const { data, error } = await supabase

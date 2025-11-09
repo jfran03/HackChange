@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { supabase } from "../lib/supabaseClient";
 
 const Sidebar = ({ onNavigate }) => {
   const [activeItem, setActiveItem] = useState("Home");
@@ -30,11 +31,12 @@ const Sidebar = ({ onNavigate }) => {
     };
   }, []);
 
-  const handleClick = (itemName) => {
+  const handleClick = async (itemName) => {
     setActiveItem(itemName);
 
     // ✅ Handle sign out
     if (itemName === "Sign out") {
+      await supabase.auth.signOut();
       localStorage.removeItem("isLoggedIn");
       setLoggedIn(false);
       setActiveItem("Home");

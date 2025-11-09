@@ -177,6 +177,18 @@
   transform: translateY(0);
 }
 
+.form-error {
+  color: #fca5a5;
+  font-weight: 600;
+  margin-bottom: 1rem;
+}
+
+.form-success {
+  color: #6ee7b7;
+  font-weight: 600;
+  margin-bottom: 1rem;
+}
+
 /* Responsive design */
 @media (max-width: 768px) {
   .form-row {

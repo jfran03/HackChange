@@ -4,6 +4,7 @@ import "leaflet/dist/leaflet.css";
 import { personIcon, alertIcon } from "../components/CustomIcon";
 import AlertMarker from "../components/AlertMarker";
 import { createAlert, fetchAlerts } from "../lib/alerts";
+import { supabase } from "../lib/supabaseClient";
 
 const MapView = () => {
   const [map, setMap] = useState(null);
@@ -13,6 +14,8 @@ const MapView = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [statusMessage, setStatusMessage] = useState("");
   const [statusType, setStatusType] = useState(null);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [userId, setUserId] = useState(null);
   const alertLayerRef = useRef(null);
   const messageTimeoutRef = useRef(null);
 
@@ -58,8 +61,40 @@ const MapView = () => {
     }, 4000);
   };
 
+  useEffect(() => {
+    let isMounted = true;
+
+    const syncLogin = async () => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!isMounted) return;
+      console.log("[Map] Session check:", session ? "Logged in" : "Not logged in", "User ID:", session?.user?.id);
+      setIsLoggedIn(!!session);
+      setUserId(session?.user?.id ?? null);
+    };
+
+    syncLogin();
+    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!isMounted) return;
+      console.log("[Map] Auth state changed:", _event, "Session:", session ? "Active" : "None", "User ID:", session?.user?.id);
+      setIsLoggedIn(!!session);
+      setUserId(session?.user?.id ?? null);
+    });
+
+    return () => {
+      isMounted = false;
+      authListener?.subscription?.unsubscribe();
+    };
+  }, []);
+
   const specifyAlert = async (type) => {
     showMarker(false);
+
+    if (!isLoggedIn || !userId) {
+      showStatus("Unable to make alert. Please log in first.", "error");
+      return;
+    }
 
     if (type === "Cancel" || !markerPos || !map || isSaving) {
       return;
@@ -68,11 +103,14 @@ const MapView = () => {
     setIsSaving(true);
 
     try {
+      console.log("[Map] Creating alert with coords:", { lat: markerPos.lat, lng: markerPos.lng });
       const newAlert = await createAlert({
         type,
         latitude: markerPos.lat,
         longitude: markerPos.lng,
+        created_by: userId,
       });
+      console.log("[Map] Alert created:", newAlert);
       setAlerts((prev) => [newAlert, ...prev]);
       showStatus("Alert saved to STREET AID.", "success");
     } catch (error) {
@@ -87,6 +125,11 @@ const MapView = () => {
     if (!map) return;
 
     const handleMapClick = (e) => {
+      console.log("[Map] Click detected - isLoggedIn:", isLoggedIn, "userId:", userId);
+      if (!isLoggedIn || !userId) {
+        showStatus("Unable to make alert. Please log in first.", "error");
+        return;
+      }
       setMarkerPos(e.latlng);
       showMarker(true);
     };
@@ -95,7 +138,7 @@ const MapView = () => {
     return () => {
       map.off("click", handleMapClick);
     };
-  }, [map]);
+  }, [map, isLoggedIn, userId]);
 
   useEffect(() => {
     if (!map) return;
@@ -119,10 +162,14 @@ const MapView = () => {
     alertLayerRef.current.clearLayers();
 
     alerts.forEach((alert) => {
+      console.log("[Map] Rendering alert:", alert);
       if (alert.latitude && alert.longitude) {
+        console.log("[Map] Adding marker at:", alert.latitude, alert.longitude);
         L.marker([alert.latitude, alert.longitude], { icon: alertIcon })
           .addTo(alertLayerRef.current)
           .bindPopup(`🚨 ${alert.type} reported here.`);
+      } else {
+        console.warn("[Map] Alert missing coordinates:", alert);
       }
     });
   }, [alerts, map]);
