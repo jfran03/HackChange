@@ -3,9 +3,10 @@ import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { personIcon, alertIcon, houseIcon } from "../components/CustomIcon";
 import AlertMarker from "../components/AlertMarker";
-import { createAlert, fetchAlerts } from "../lib/alerts";
+import { createAlert, fetchAlerts, resolveAlert, unresolveAlert } from "../lib/alerts";
 import { fetchShelters } from "../lib/overpass";
 import { supabase } from "../lib/supabaseClient";
+import { isApprovedMember } from "../lib/members";
 import "../styles/Map.css";
 
 const formatDistance = (meters) => {
@@ -55,6 +56,7 @@ const MapView = () => {
   const [statusType, setStatusType] = useState(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userId, setUserId] = useState(null);
+  const [isApprovedMemberUser, setIsApprovedMemberUser] = useState(false);
   const alertLayerRef = useRef(null);
   const shelterLayerRef = useRef(null);
   const messageTimeoutRef = useRef(null);
@@ -116,15 +118,39 @@ const MapView = () => {
       if (!isMounted) return;
       console.log("[Map] Session check:", session ? "Logged in" : "Not logged in", "User ID:", session?.user?.id);
       setIsLoggedIn(!!session);
-      setUserId(session?.user?.id ?? null);
+      const currentUserId = session?.user?.id ?? null;
+      setUserId(currentUserId);
+
+      // Check if user is approved member
+      if (currentUserId) {
+        const approved = await isApprovedMember(currentUserId);
+        if (isMounted) {
+          setIsApprovedMemberUser(approved);
+          console.log("[Map] User is approved member:", approved);
+        }
+      } else {
+        setIsApprovedMemberUser(false);
+      }
     };
 
     syncLogin();
-    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: authListener } = supabase.auth.onAuthStateChange(async (_event, session) => {
       if (!isMounted) return;
       console.log("[Map] Auth state changed:", _event, "Session:", session ? "Active" : "None", "User ID:", session?.user?.id);
       setIsLoggedIn(!!session);
-      setUserId(session?.user?.id ?? null);
+      const currentUserId = session?.user?.id ?? null;
+      setUserId(currentUserId);
+
+      // Check if user is approved member
+      if (currentUserId) {
+        const approved = await isApprovedMember(currentUserId);
+        if (isMounted) {
+          setIsApprovedMemberUser(approved);
+          console.log("[Map] User is approved member:", approved);
+        }
+      } else {
+        setIsApprovedMemberUser(false);
+      }
     });
 
     return () => {
@@ -132,6 +158,30 @@ const MapView = () => {
       authListener?.subscription?.unsubscribe();
     };
   }, []);
+
+  const handleResolveAlert = async (alertId, currentlyResolved) => {
+    if (!isApprovedMemberUser) {
+      showStatus("Only approved members can resolve alerts.", "error");
+      return;
+    }
+
+    try {
+      if (currentlyResolved) {
+        await unresolveAlert(alertId);
+        showStatus("Alert reopened.", "success");
+      } else {
+        await resolveAlert(alertId, userId);
+        showStatus("Alert marked as resolved.", "success");
+      }
+
+      // Refresh alerts
+      const updatedAlerts = await fetchAlerts();
+      setAlerts(updatedAlerts);
+    } catch (error) {
+      console.error("Failed to update alert", error);
+      showStatus("Unable to update alert. Please try again.", "error");
+    }
+  };
 
   const specifyAlert = async (type) => {
     showMarker(false);
@@ -278,10 +328,16 @@ const MapView = () => {
         });
 
         // Build popup HTML with alert info and closest shelter
+        const isResolved = alert.resolved || false;
+        const statusBadge = isResolved
+          ? '<span class="alert-popup-status-badge resolved">✓ Resolved</span>'
+          : '<span class="alert-popup-status-badge active">Active</span>';
+
         let popupHtml = `
-          <div class="alert-popup">
+          <div class="alert-popup ${isResolved ? 'resolved' : ''}">
             <div class="alert-popup-header">
               <strong>🚨 ${escapeHtml(alert.type)}</strong>
+              ${statusBadge}
             </div>
         `;
 
@@ -303,11 +359,41 @@ const MapView = () => {
           `;
         }
 
+        // Add resolve button for approved members
+        if (isApprovedMemberUser) {
+          const buttonText = isResolved ? 'Reopen Alert' : 'Mark as Resolved';
+          const buttonClass = isResolved ? 'reopen' : 'resolve';
+          popupHtml += `
+            <button
+              class="alert-popup-resolve-btn ${buttonClass}"
+              data-alert-id="${alert.id}"
+              data-resolved="${isResolved}"
+            >
+              ${buttonText}
+            </button>
+          `;
+        }
+
         popupHtml += `</div>`;
 
-        L.marker([alert.latitude, alert.longitude], { icon: alertIcon })
+        const marker = L.marker([alert.latitude, alert.longitude], { icon: alertIcon })
           .addTo(alertLayerRef.current)
           .bindPopup(popupHtml);
+
+        // Add click handler for resolve button
+        marker.on('popupopen', () => {
+          const popup = marker.getPopup();
+          const popupElement = popup.getElement();
+          const resolveBtn = popupElement?.querySelector('.alert-popup-resolve-btn');
+
+          if (resolveBtn) {
+            resolveBtn.addEventListener('click', () => {
+              const alertId = resolveBtn.getAttribute('data-alert-id');
+              const currentlyResolved = resolveBtn.getAttribute('data-resolved') === 'true';
+              handleResolveAlert(alertId, currentlyResolved);
+            });
+          }
+        });
       } else {
         console.warn("[Map] Alert missing coordinates:", alert);
       }

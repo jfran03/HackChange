@@ -1,3 +1,5 @@
+import { shelterCache } from "./shelterCache";
+
 const OVERPASS_ENDPOINT = "https://overpass-api.de/api/interpreter";
 
 const buildShelterQuery = (bounds) => {
@@ -123,6 +125,20 @@ export const fetchShelters = async (bounds, { signal } = {}) => {
     throw new Error("Bounds are required to query Overpass API");
   }
 
+  // Convert Leaflet bounds to simple object for cache key
+  const boundsObj = {
+    north: bounds.getNorth(),
+    south: bounds.getSouth(),
+    east: bounds.getEast(),
+    west: bounds.getWest(),
+  };
+
+  // Check cache first
+  const cached = shelterCache.get(boundsObj);
+  if (cached) {
+    return cached;
+  }
+
   const query = buildShelterQuery(bounds);
 
   const response = await fetch(OVERPASS_ENDPOINT, {
@@ -154,5 +170,10 @@ export const fetchShelters = async (bounds, { signal } = {}) => {
     }
   });
 
-  return Array.from(deduped.values());
+  const results = Array.from(deduped.values());
+
+  // Store in cache
+  shelterCache.set(boundsObj, results);
+
+  return results;
 };

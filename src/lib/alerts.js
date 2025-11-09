@@ -42,3 +42,47 @@ export const fetchAlerts = async () => {
 
   return data ?? [];
 };
+
+/**
+ * Resolve/mark an alert as completed
+ */
+export const resolveAlert = async (alertId, userId) => {
+  const { data, error } = await supabase
+    .from(ALERTS_TABLE)
+    .update({
+      resolved: true,
+      resolved_by: userId,
+      resolved_at: new Date().toISOString(),
+    })
+    .eq("id", alertId)
+    .select()
+    .single();
+
+  if (error) {
+    throw error;
+  }
+
+  return data;
+};
+
+/**
+ * Unresolve an alert (reopen it)
+ */
+export const unresolveAlert = async (alertId) => {
+  const { data, error } = await supabase
+    .from(ALERTS_TABLE)
+    .update({
+      resolved: false,
+      resolved_by: null,
+      resolved_at: null,
+    })
+    .eq("id", alertId)
+    .select()
+    .single();
+
+  if (error) {
+    throw error;
+  }
+
+  return data;
+};
