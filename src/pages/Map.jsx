@@ -6,6 +6,42 @@ import AlertMarker from "../components/AlertMarker";
 import { createAlert, fetchAlerts } from "../lib/alerts";
 import { fetchShelters } from "../lib/overpass";
 
+const formatDistance = (meters) => {
+  if (typeof meters !== "number" || Number.isNaN(meters)) {
+    return null;
+  }
+
+  if (meters >= 1000) {
+    return `${(meters / 1000).toFixed(1)} km away`;
+  }
+
+  if (meters >= 100) {
+    return `${(meters / 1000).toFixed(2)} km away`;
+  }
+
+  return `${Math.round(meters)} m away`;
+};
+
+const escapeHtml = (value = "") =>
+  String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+
+const serviceText = (value, serviceName) => {
+  if (value === true) {
+    return `Provides ${serviceName}`;
+  }
+
+  if (value === false) {
+    return `Does not provide ${serviceName}`;
+  }
+
+  return `${serviceName} availability unknown`;
+};
+
 const MapView = () => {
   const [map, setMap] = useState(null);
   const [alertMarker, showMarker] = useState(false);
@@ -189,22 +225,51 @@ const MapView = () => {
 
     shelterLayerRef.current.clearLayers();
 
+    const center = map.getCenter();
+
     shelters.forEach((location) => {
       if (location.latitude && location.longitude) {
-        const popupLines = [
-          `<strong>${location.name}</strong>`,
-        ];
+        const metersAway = map.distance(center, [location.latitude, location.longitude]);
+        const distanceText = formatDistance(metersAway);
 
-        if (location.address) {
-          popupLines.push(location.address);
-        }
+        const capacityText = location.capacity ? `${location.capacity}` : "Unknown";
+        const statusText = location.status || "Status unknown";
+        const foodText = serviceText(location.providesFood, "Food & Water");
+        const medicalText = serviceText(location.providesMedical, "Medical Services");
+        const descriptionText =
+          location.description ||
+          "No additional information is available for this shelter.";
 
-        shelterLayerRef.current
-          .addLayer(
-            L.marker([location.latitude, location.longitude], { icon: houseIcon }).bindPopup(
-              popupLines.join("<br />")
-            )
-          );
+        const popupHtml = `
+          <div class="shelter-popup">
+            <div class="shelter-popup__header">
+              <div class="shelter-popup__thumbnail">Shelter</div>
+              <div class="shelter-popup__headline">
+                <div class="shelter-popup__title">${escapeHtml(location.name)}</div>
+                ${location.address ? `<div class="shelter-popup__address">${escapeHtml(location.address)}</div>` : ""}
+                ${distanceText ? `<div class="shelter-popup__distance">${distanceText}</div>` : ""}
+              </div>
+            </div>
+            <div class="shelter-popup__body">
+              <div class="shelter-popup__meta">
+                <div><span class="shelter-popup__label">Capacity:</span> ${escapeHtml(capacityText)}<span class="shelter-popup__status">${statusText ? ` · ${escapeHtml(statusText)}` : ""}</span></div>
+                <div>${escapeHtml(foodText)}</div>
+                <div>${escapeHtml(medicalText)}</div>
+              </div>
+              <div class="shelter-popup__description">${escapeHtml(descriptionText)}</div>
+            </div>
+          </div>
+        `;
+
+        shelterLayerRef.current.addLayer(
+          L.marker([location.latitude, location.longitude], { icon: houseIcon }).bindPopup(
+            popupHtml,
+            {
+              className: "shelter-popup__container",
+              maxWidth: 320,
+            }
+          )
+        );
       }
     });
   }, [shelters, map]);
