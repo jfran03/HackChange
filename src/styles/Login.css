@@ -94,6 +94,30 @@
   transform: translateY(0);
 }
 
+.login-button.secondary {
+  margin-top: 0.75rem;
+  background-color: transparent;
+  border: 2px solid #5688F5;
+  color: #5688F5;
+}
+
+.login-button.secondary:hover {
+  background-color: rgba(86, 136, 245, 0.1);
+  color: white;
+}
+
+.form-error {
+  color: #fca5a5;
+  margin-bottom: 1rem;
+  font-weight: 600;
+}
+
+.form-success {
+  color: #6ee7b7;
+  margin-bottom: 1rem;
+  font-weight: 600;
+}
+
 .login-toggle {
   text-align: center;
   margin-top: 1.5rem;

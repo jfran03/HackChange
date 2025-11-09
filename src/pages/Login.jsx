@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import Sidebar from "../components/Sidebar";
+import { supabase } from "../lib/supabaseClient";
 import "../styles/Login.css";
 
 const Login = () => {
@@ -9,6 +9,8 @@ const Login = () => {
     email: "",
     password: "",
   });
+  const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
   const handleChange = (e) => {
     setFormData({
@@ -17,38 +19,42 @@ const Login = () => {
     });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("Login:", { email: formData.email, password: formData.password });
-    alert("Login successful!");
-    localStorage.setItem("isLoggedIn", "true");
-    navigate("/");
-  };
-  
+    setErrorMessage("");
 
-  const handleNavigation = (itemName) => {
-    if (itemName === "Log in") {
-      navigate("/login");
-    } else if (itemName === "Member") {
-      navigate("/member");
-    } else if (itemName === "Home") {
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email: formData.email.trim(),
+        password: formData.password,
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      alert("Login successful!");
+      localStorage.setItem("isLoggedIn", "true");
+      window.dispatchEvent(new Event("authChange"));
       navigate("/");
-    } else if (itemName === "Map") {
-      navigate("/"); // Map button should return to the main App map view
-    } else if (itemName === "About Us") {
-      navigate("/about");
+    } catch (err) {
+      console.error("Login failed:", err);
+      setErrorMessage(err.message || "Unable to log in.");
+    } finally {
+      setLoading(false);
     }
   };
-
+  
   return (
     <div>
-      <Sidebar onNavigate={handleNavigation} />
       <div className="login-container">
         <div className="login-card">
           <h1 className="login-title">STREET AID💙</h1>
           <p className="login-subtitle">Welcome back</p>
 
           <form onSubmit={handleSubmit} className="login-form">
+            {errorMessage && <p className="form-error">{errorMessage}</p>}
             <div className="form-group">
               <label htmlFor="email">Email</label>
               <input
@@ -59,6 +65,7 @@ const Login = () => {
                 onChange={handleChange}
                 placeholder="Enter your email"
                 required
+                disabled={loading}
               />
             </div>
 
@@ -72,11 +79,19 @@ const Login = () => {
                 onChange={handleChange}
                 placeholder="Enter your password"
                 required
+                disabled={loading}
               />
             </div>
 
-            <button type="submit" className="login-button">
-              Log In
+            <button type="submit" className="login-button" disabled={loading}>
+              {loading ? "Signing in..." : "Log In"}
+            </button>
+            <button
+              type="button"
+              className="login-button secondary"
+              onClick={() => navigate("/forgot-password")}
+            >
+              Forgot password?
             </button>
           </form>
 

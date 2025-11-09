@@ -9,13 +9,25 @@ const Sidebar = ({ onNavigate }) => {
     { name: "Home", icon: "🏠" },
     { name: "Map", icon: "🗺️" },
     { name: "Member", icon: "👥" },
+    { name: "Shelter", icon: "🏢" },
     { name: "About Us", icon: "ℹ️" },
   ];
 
   useEffect(() => {
-    // Check login state on page load
-    const saved = localStorage.getItem("isLoggedIn") === "true";
-    setLoggedIn(saved);
+    const syncLoginState = () => {
+      const saved = localStorage.getItem("isLoggedIn") === "true";
+      setLoggedIn(saved);
+    };
+
+    syncLoginState();
+
+    window.addEventListener("storage", syncLoginState);
+    window.addEventListener("authChange", syncLoginState);
+
+    return () => {
+      window.removeEventListener("storage", syncLoginState);
+      window.removeEventListener("authChange", syncLoginState);
+    };
   }, []);
 
   const handleClick = (itemName) => {
@@ -27,6 +39,7 @@ const Sidebar = ({ onNavigate }) => {
       setLoggedIn(false);
       setActiveItem("Home");
       if (onNavigate) onNavigate("Home");
+      window.dispatchEvent(new Event("authChange"));
       return;
     }
 

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import Sidebar from "../components/Sidebar";
 import "../styles/Registration.css";
+import { supabase } from "../lib/supabaseClient";
 
 const INITIAL_FORM = {
   username: "",
@@ -14,32 +14,16 @@ const Registration = () => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState(INITIAL_FORM);
   const [errors, setErrors] = useState([]);
-
-  const handleNavigation = (itemName) => {
-    if (itemName === "Log in") {
-      navigate("/login");
-    } else if (itemName === "Member") {
-      navigate("/member");
-    } else if (itemName === "Home") {
-      navigate("/");
-    } else if (itemName === "Map") {
-      navigate("/"); // Map button should return to the main App map view
-    } else if (itemName === "About Us") {
-      navigate("/about");
-    }
-  };
+  const [loading, setLoading] = useState(false);
+  const [globalError, setGlobalError] = useState("");
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   const validate = () => {
     const newErrors = [];
-
     if (!formData.username.trim()) newErrors.push("Username is required.");
     if (!formData.email.trim()) {
       newErrors.push("Email is required.");
@@ -51,23 +35,75 @@ const Registration = () => {
     if (formData.password && formData.password.length < 8) {
       newErrors.push("Password must be at least 8 characters.");
     }
-
     setErrors(newErrors);
     return newErrors.length === 0;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setGlobalError("");
     if (!validate()) return;
 
-    console.log("New account:", formData);
-    alert("Account created successfully!");
-    navigate("/login");
+    setLoading(true);
+    try {
+      // 1) Check username uniqueness (case-insensitive)
+      const { data: existing, error: checkErr } = await supabase
+        .from("profiles")
+        .select("user_id")
+        .ilike("username", formData.username.trim());
+      if (checkErr) throw checkErr;
+      if (existing && existing.length > 0) {
+        setGlobalError("Username is already taken.");
+        setLoading(false);
+        return;
+      }
+
+      // 2) Create auth user
+      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+        email: formData.email.trim(),
+        password: formData.password,
+        options: {
+          data: {
+            role: "member",
+            username: formData.username.trim(),
+            phone: formData.phone.trim(),
+          },
+          emailRedirectTo: window.location.origin + "/login",
+        },
+      });
+      if (signUpError) throw signUpError;
+
+      const userId = signUpData.user?.id;
+      if (!userId) throw new Error("Sign up failed: no user id.");
+
+      // 3) Insert/Update profile row so account data lives in our table as well
+      const { error: profileErr } = await supabase.from("profiles").upsert(
+        [
+          {
+            user_id: userId,
+            username: formData.username.trim(),
+            phone: formData.phone.trim(),
+            email: formData.email.trim(),
+          },
+        ],
+        {
+          onConflict: "user_id",
+        }
+      );
+      if (profileErr) throw profileErr;
+
+      alert("Account created! Check your email to confirm before logging in.");
+      navigate("/login");
+    } catch (err) {
+      console.error(err);
+      setGlobalError(err.message || "Registration failed.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <div>
-      <Sidebar onNavigate={handleNavigation} />
       <div className="registration-container">
         <div className="registration-card">
           <h1 className="registration-title">Create Your Account</h1>
@@ -75,13 +111,16 @@ const Registration = () => {
             Sign up to access STREET AID resources and support tools.
           </p>
 
-          {errors.length > 0 && (
+          {(errors.length > 0 || globalError) && (
             <div className="form-errors">
-              <ul>
-                {errors.map((error) => (
-                  <li key={error}>{error}</li>
-                ))}
-              </ul>
+              {globalError && <p>{globalError}</p>}
+              {errors.length > 0 && (
+                <ul>
+                  {errors.map((error) => (
+                    <li key={error}>{error}</li>
+                  ))}
+                </ul>
+              )}
             </div>
           )}
 
@@ -96,6 +135,7 @@ const Registration = () => {
                 value={formData.username}
                 onChange={handleChange}
                 required
+                disabled={loading}
               />
             </div>
 
@@ -109,6 +149,7 @@ const Registration = () => {
                 value={formData.email}
                 onChange={handleChange}
                 required
+                disabled={loading}
               />
             </div>
 
@@ -122,6 +163,7 @@ const Registration = () => {
                 value={formData.phone}
                 onChange={handleChange}
                 required
+                disabled={loading}
               />
             </div>
 
@@ -135,19 +177,25 @@ const Registration = () => {
                 value={formData.password}
                 onChange={handleChange}
                 required
+                disabled={loading}
               />
               <p className="field-helper">Use at least 8 characters for security.</p>
             </div>
 
-            <button type="submit" className="registration-button">
-              Sign Up
+            <button type="submit" className="registration-button" disabled={loading}>
+              {loading ? "Creating..." : "Sign Up"}
             </button>
           </form>
 
           <div className="registration-footer">
             <p>
               Already have an account?{" "}
-              <button type="button" className="footer-link" onClick={() => navigate("/login")}>
+              <button
+                type="button"
+                className="footer-link"
+                onClick={() => navigate("/login")}
+                disabled={loading}
+              >
                 Log In
               </button>
             </p>

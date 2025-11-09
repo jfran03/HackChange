@@ -1,27 +1,8 @@
-import { useNavigate } from "react-router-dom";
-import Sidebar from "../components/Sidebar";
 import "../styles/AboutUs.css";
 
 const AboutUs = () => {
-  const navigate = useNavigate();
-
-  const handleNavigation = (itemName) => {
-    if (itemName === "Log in") {
-      navigate("/login");
-    } else if (itemName === "Member") {
-      navigate("/member");
-    } else if (itemName === "Home") {
-      navigate("/");
-    } else if (itemName === "Map") {
-      navigate("/"); // Map button should return to the main App map view
-    } else if (itemName === "About Us") {
-      navigate("/about");
-    }
-  };
-
   return (
     <div>
-      <Sidebar onNavigate={handleNavigation} />
       <div className="aboutus-container">
         <div className="aboutus-content">
           <div className="aboutus-text">
