@@ -1,6 +1,6 @@
 from pydantic_settings import BaseSettings
-from typing import List
-import os
+from typing import List, Optional
+
 
 
 class Settings(BaseSettings):
@@ -18,6 +18,12 @@ class Settings(BaseSettings):
 
     # Database
     DATABASE_URL: str = "sqlite:///./hackchange.db"
+
+    # OpenAI / LLM
+    OPENAI_API_KEY: Optional[str] = None
+    OPENAI_MODEL: str = "gpt-4o-mini"
+    OPENAI_TEMPERATURE: float = 0.4
+    OPENAI_MAX_TOKENS: int = 256
 
     class Config:
         env_file = ".env"
