@@ -8,6 +8,7 @@ import Login from "./pages/Login";
 import Registration from "./pages/Registration";
 import Member from "./pages/Member";
 import AboutUs from "./pages/AboutUs";
+import ChatWidget from "./components/ChatWidget";
 
 const MapView = () => {
   const navigate = useNavigate();
@@ -85,7 +86,8 @@ const MapView = () => {
       {/* Sidebar + Alert system */}
       <Sidebar onNavigate={handleNavigation} />
       <AlertMarker onSelect={specifyAlert} show={alertMarker} />
-
+      <ChatWidget />
+      
       {/* Map container */}
       <div
         id="map"
