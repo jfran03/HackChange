@@ -1,0 +1,105 @@
+/* Backdrop */
+.alert-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 999;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: auto;
+}
+
+.alert-backdrop.visible {
+  opacity: 1;
+}
+
+/* Bottom Sheet */
+.alert-sheet {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translate(-50%, 150%);
+  max-width: 400px;
+  width: 90%;
+  background-color: #111827;
+  border-radius: 20px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.35);
+  z-index: 1000;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  pointer-events: auto;
+}
+
+.alert-sheet.visible {
+  transform: translate(-50%, 0);
+}
+
+/* Content */
+.alert-sheet-content {
+  padding: 20px;
+}
+
+.alert-sheet-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.alert-sheet-title {
+  font-size: 1.25rem;
+  font-weight: bold;
+  margin: 0;
+  color: white;
+}
+
+.alert-sheet-close {
+  background: none;
+  border: none;
+  font-size: 28px;
+  cursor: pointer;
+  color: #9ca3af;
+  padding: 4px 8px;
+  line-height: 1;
+  transition: color 0.2s ease;
+}
+
+.alert-sheet-close:hover {
+  color: #f9fafb;
+}
+
+/* Buttons Container */
+.alert-sheet-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Alert Buttons */
+.alert-button {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  font-size: 1rem;
+  font-weight: 500;
+  background-color: #5688F5;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  width: 100%;
+  justify-content: flex-start;
+  color: white;
+}
+
+.alert-button:hover {
+  background-color: #87B7D5;
+  transform: translateY(-2px);
+}
+
+.alert-button-icon {
+  font-size: 1.5rem;
+}
