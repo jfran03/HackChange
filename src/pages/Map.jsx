@@ -166,6 +166,8 @@ const MapView = () => {
     }
 
     try {
+      console.log("[Map] Resolving alert:", { alertId, currentlyResolved, userId, isApprovedMemberUser });
+
       if (currentlyResolved) {
         await unresolveAlert(alertId);
         showStatus("Alert reopened.", "success");
@@ -178,8 +180,11 @@ const MapView = () => {
       const updatedAlerts = await fetchAlerts();
       setAlerts(updatedAlerts);
     } catch (error) {
-      console.error("Failed to update alert", error);
-      showStatus("Unable to update alert. Please try again.", "error");
+      console.error("Failed to update alert - Full error:", error);
+      console.error("Error message:", error.message);
+      console.error("Error details:", error.details);
+      console.error("Error hint:", error.hint);
+      showStatus(`Unable to update alert: ${error.message}`, "error");
     }
   };
 

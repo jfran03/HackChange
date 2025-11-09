@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../lib/supabaseClient";
+import { getMemberCredentials } from "../lib/members";
 import "../styles/Member.css";
 
 const Member = () => {
@@ -25,9 +26,71 @@ const Member = () => {
     backgroundCheck: "",
     motivation: "",
   });
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
+  const [existingCredentials, setExistingCredentials] = useState(null);
+  const [userId, setUserId] = useState(null);
+
+  // Check for existing membership on mount and when navigating to the page
+  useEffect(() => {
+    let isMounted = true;
+
+    const checkExistingMembership = async () => {
+      setLoading(true);
+      try {
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+
+        if (!isMounted) return;
+
+        if (user) {
+          setUserId(user.id);
+          const credentials = await getMemberCredentials(user.id);
+          if (isMounted) {
+            setExistingCredentials(credentials);
+          }
+        } else {
+          setExistingCredentials(null);
+          setUserId(null);
+        }
+      } catch (error) {
+        console.error("Error checking membership:", error);
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    checkExistingMembership();
+
+    // Also listen for auth state changes
+    const { data: authListener } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      if (!isMounted) return;
+
+      if (session?.user) {
+        setUserId(session.user.id);
+        const credentials = await getMemberCredentials(session.user.id);
+        if (isMounted) {
+          setExistingCredentials(credentials);
+          setLoading(false);
+        }
+      } else {
+        if (isMounted) {
+          setExistingCredentials(null);
+          setUserId(null);
+          setLoading(false);
+        }
+      }
+    });
+
+    return () => {
+      isMounted = false;
+      authListener?.subscription?.unsubscribe();
+    };
+  }, []);
 
   const handleChange = (e) => {
     setFormData({
@@ -84,6 +147,108 @@ const Member = () => {
     }
   };
 
+  // Helper function to get status badge
+  const getStatusBadge = (status) => {
+    const badges = {
+      pending: { text: "Pending Review", className: "status-pending" },
+      approved: { text: "Approved", className: "status-approved" },
+      rejected: { text: "Rejected", className: "status-rejected" },
+    };
+    return badges[status] || badges.pending;
+  };
+
+  // Show loading state
+  if (loading) {
+    return (
+      <div className="member-container">
+        <div className="member-card">
+          <h1 className="member-title">STREET AID💙</h1>
+          <p>Loading membership information...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show existing membership info if user has already applied
+  if (existingCredentials) {
+    const statusBadge = getStatusBadge(existingCredentials.status);
+
+    return (
+      <div>
+        <div className="member-container">
+          <div className="member-card">
+            <h1 className="member-title">STREET AID💙</h1>
+            <p className="member-subtitle">Your Membership</p>
+
+            <div className={`membership-status ${statusBadge.className}`}>
+              <h3>Status: {statusBadge.text}</h3>
+              {existingCredentials.status === "pending" && (
+                <p>Your application is under review. You will be notified once it's processed.</p>
+              )}
+              {existingCredentials.status === "approved" && (
+                <p>Congratulations! You have full member access to advanced features.</p>
+              )}
+              {existingCredentials.status === "rejected" && (
+                <p>Your application was not approved. Please contact support for more information.</p>
+              )}
+            </div>
+
+            <div className="membership-details">
+              <h3>Application Details</h3>
+              <div className="detail-grid">
+                <div className="detail-item">
+                  <label>Agency/Organization:</label>
+                  <p>{existingCredentials.agency_name}</p>
+                </div>
+                <div className="detail-item">
+                  <label>Role Title:</label>
+                  <p>{existingCredentials.role_title}</p>
+                </div>
+                <div className="detail-item">
+                  <label>Years of Experience:</label>
+                  <p>{existingCredentials.years_experience}</p>
+                </div>
+                <div className="detail-item">
+                  <label>Credential Type:</label>
+                  <p>{existingCredentials.credential_type}</p>
+                </div>
+                <div className="detail-item">
+                  <label>Credential ID:</label>
+                  <p>{existingCredentials.credential_id}</p>
+                </div>
+                {existingCredentials.verification_link && (
+                  <div className="detail-item">
+                    <label>Verification Link:</label>
+                    <a href={existingCredentials.verification_link} target="_blank" rel="noopener noreferrer">
+                      View Credential
+                    </a>
+                  </div>
+                )}
+                <div className="detail-item">
+                  <label>Background Check Status:</label>
+                  <p>{existingCredentials.background_check}</p>
+                </div>
+                <div className="detail-item full-width">
+                  <label>Motivation:</label>
+                  <p>{existingCredentials.motivation}</p>
+                </div>
+                <div className="detail-item">
+                  <label>Submitted:</label>
+                  <p>{new Date(existingCredentials.created_at).toLocaleDateString()}</p>
+                </div>
+              </div>
+            </div>
+
+            <button className="member-button" onClick={() => navigate("/map")}>
+              Back to Map
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show sign-up form for new members
   return (
     <div>
       <div className="member-container">

@@ -23,8 +23,10 @@
   "dependencies": {
     "@fortawesome/fontawesome-free": "^7.1.0",
     "@supabase/supabase-js": "^2.80.0",
+    "fastapi": "^0.0.8",
     "leaflet": "^1.9.4",
     "leaflet-extra-markers": "^1.2.2",
+    "openai": "^6.8.1",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-leaflet": "^5.0.0",
