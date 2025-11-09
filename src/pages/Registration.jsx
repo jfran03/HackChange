@@ -3,52 +3,17 @@ import { useNavigate } from "react-router-dom";
 import Sidebar from "../components/Sidebar";
 import "../styles/Registration.css";
 
+const INITIAL_FORM = {
+  username: "",
+  email: "",
+  phone: "",
+  password: "",
+};
+
 const Registration = () => {
   const navigate = useNavigate();
-  const [accountType, setAccountType] = useState("member"); // "member" or "shelter"
-  const [formData, setFormData] = useState({
-    // Member fields
-    firstName: "",
-    lastName: "",
-    email: "",
-    phone: "",
-    password: "",
-    confirmPassword: "",
-    dateOfBirth: "",
-    address: "",
-    city: "",
-    postalCode: "",
-    emergencyContact: "",
-    emergencyPhone: "",
-    // Shelter fields
-    organizationName: "",
-    organizationType: "",
-    registrationNumber: "",
-    contactPerson: "",
-    capacity: "",
-    servicesOffered: "",
-  });
-
-  const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
-  };
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-
-    if (formData.password !== formData.confirmPassword) {
-      alert("Passwords do not match!");
-      return;
-    }
-
-    console.log("Registration data:", formData);
-    // TODO: Implement registration logic with Supabase
-    alert("Registration successful!");
-    navigate("/login");
-  };
+  const [formData, setFormData] = useState(INITIAL_FORM);
+  const [errors, setErrors] = useState([]);
 
   const handleNavigation = (itemName) => {
     if (itemName === "Log in") {
@@ -58,10 +23,46 @@ const Registration = () => {
     } else if (itemName === "Home") {
       navigate("/");
     } else if (itemName === "Map") {
-      navigate("/");
+      navigate("/"); // Map button should return to the main App map view
     } else if (itemName === "About Us") {
       navigate("/about");
     }
+  };
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  const validate = () => {
+    const newErrors = [];
+
+    if (!formData.username.trim()) newErrors.push("Username is required.");
+    if (!formData.email.trim()) {
+      newErrors.push("Email is required.");
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      newErrors.push("Please enter a valid email.");
+    }
+    if (!formData.phone.trim()) newErrors.push("Phone number is required.");
+    if (!formData.password.trim()) newErrors.push("Password is required.");
+    if (formData.password && formData.password.length < 8) {
+      newErrors.push("Password must be at least 8 characters.");
+    }
+
+    setErrors(newErrors);
+    return newErrors.length === 0;
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (!validate()) return;
+
+    console.log("New account:", formData);
+    alert("Account created successfully!");
+    navigate("/login");
   };
 
   return (
@@ -69,432 +70,84 @@ const Registration = () => {
       <Sidebar onNavigate={handleNavigation} />
       <div className="registration-container">
         <div className="registration-card">
-          <h1 className="registration-title">STREET AID💙</h1>
-          <p className="registration-subtitle">Registration</p>
+          <h1 className="registration-title">Create Your Account</h1>
+          <p className="registration-subtitle">
+            Sign up to access STREET AID resources and support tools.
+          </p>
 
-          <div className="account-type-selector">
-            <button
-              type="button"
-              className={`type-button ${accountType === "member" ? "active" : ""}`}
-              onClick={() => setAccountType("member")}
-            >
-              👤 Member
-            </button>
-            <button
-              type="button"
-              className={`type-button ${accountType === "shelter" ? "active" : ""}`}
-              onClick={() => setAccountType("shelter")}
-            >
-              🏢 Shelter/Organization
-            </button>
-          </div>
+          {errors.length > 0 && (
+            <div className="form-errors">
+              <ul>
+                {errors.map((error) => (
+                  <li key={error}>{error}</li>
+                ))}
+              </ul>
+            </div>
+          )}
 
-          <form onSubmit={handleSubmit} className="registration-form">
-            {accountType === "member" ? (
-              <>
-            <div className="form-section">
-              <h3 className="section-title">Personal Information</h3>
-
-              <div className="form-row">
-                <div className="form-group">
-                  <label htmlFor="firstName">First Name *</label>
-                  <input
-                    type="text"
-                    id="firstName"
-                    name="firstName"
-                    value={formData.firstName}
-                    onChange={handleChange}
-                    placeholder="Enter first name"
-                    required
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label htmlFor="lastName">Last Name *</label>
-                  <input
-                    type="text"
-                    id="lastName"
-                    name="lastName"
-                    value={formData.lastName}
-                    onChange={handleChange}
-                    placeholder="Enter last name"
-                    required
-                  />
-                </div>
-              </div>
-
-              <div className="form-row">
-                <div className="form-group">
-                  <label htmlFor="email">Email *</label>
-                  <input
-                    type="email"
-                    id="email"
-                    name="email"
-                    value={formData.email}
-                    onChange={handleChange}
-                    placeholder="Enter email address"
-                    required
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label htmlFor="phone">Phone Number *</label>
-                  <input
-                    type="tel"
-                    id="phone"
-                    name="phone"
-                    value={formData.phone}
-                    onChange={handleChange}
-                    placeholder="Enter phone number"
-                    required
-                  />
-                </div>
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="dateOfBirth">Date of Birth *</label>
-                <input
-                  type="date"
-                  id="dateOfBirth"
-                  name="dateOfBirth"
-                  value={formData.dateOfBirth}
-                  onChange={handleChange}
-                  required
-                />
-              </div>
+          <form className="registration-form simple" onSubmit={handleSubmit}>
+            <div className="form-group">
+              <label htmlFor="username">Username *</label>
+              <input
+                id="username"
+                name="username"
+                type="text"
+                placeholder="Choose a username"
+                value={formData.username}
+                onChange={handleChange}
+                required
+              />
             </div>
 
-            <div className="form-section">
-              <h3 className="section-title">Address</h3>
-
-              <div className="form-group">
-                <label htmlFor="address">Street Address *</label>
-                <input
-                  type="text"
-                  id="address"
-                  name="address"
-                  value={formData.address}
-                  onChange={handleChange}
-                  placeholder="Enter street address"
-                  required
-                />
-              </div>
-
-              <div className="form-row">
-                <div className="form-group">
-                  <label htmlFor="city">City *</label>
-                  <input
-                    type="text"
-                    id="city"
-                    name="city"
-                    value={formData.city}
-                    onChange={handleChange}
-                    placeholder="Enter city"
-                    required
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label htmlFor="postalCode">Postal Code *</label>
-                  <input
-                    type="text"
-                    id="postalCode"
-                    name="postalCode"
-                    value={formData.postalCode}
-                    onChange={handleChange}
-                    placeholder="Enter postal code"
-                    required
-                  />
-                </div>
-              </div>
+            <div className="form-group">
+              <label htmlFor="email">Email *</label>
+              <input
+                id="email"
+                name="email"
+                type="email"
+                placeholder="you@email.com"
+                value={formData.email}
+                onChange={handleChange}
+                required
+              />
             </div>
 
-            <div className="form-section">
-              <h3 className="section-title">Emergency Contact</h3>
-
-              <div className="form-row">
-                <div className="form-group">
-                  <label htmlFor="emergencyContact">Contact Name *</label>
-                  <input
-                    type="text"
-                    id="emergencyContact"
-                    name="emergencyContact"
-                    value={formData.emergencyContact}
-                    onChange={handleChange}
-                    placeholder="Emergency contact name"
-                    required
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label htmlFor="emergencyPhone">Contact Phone *</label>
-                  <input
-                    type="tel"
-                    id="emergencyPhone"
-                    name="emergencyPhone"
-                    value={formData.emergencyPhone}
-                    onChange={handleChange}
-                    placeholder="Emergency contact phone"
-                    required
-                  />
-                </div>
-              </div>
+            <div className="form-group">
+              <label htmlFor="phone">Phone Number *</label>
+              <input
+                id="phone"
+                name="phone"
+                type="tel"
+                placeholder="(555) 123-4567"
+                value={formData.phone}
+                onChange={handleChange}
+                required
+              />
             </div>
 
-            <div className="form-section">
-              <h3 className="section-title">Account Security</h3>
-
-              <div className="form-row">
-                <div className="form-group">
-                  <label htmlFor="password">Password *</label>
-                  <input
-                    type="password"
-                    id="password"
-                    name="password"
-                    value={formData.password}
-                    onChange={handleChange}
-                    placeholder="Create password"
-                    required
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label htmlFor="confirmPassword">Confirm Password *</label>
-                  <input
-                    type="password"
-                    id="confirmPassword"
-                    name="confirmPassword"
-                    value={formData.confirmPassword}
-                    onChange={handleChange}
-                    placeholder="Confirm password"
-                    required
-                  />
-                </div>
-              </div>
+            <div className="form-group">
+              <label htmlFor="password">Password *</label>
+              <input
+                id="password"
+                name="password"
+                type="password"
+                placeholder="Create password"
+                value={formData.password}
+                onChange={handleChange}
+                required
+              />
+              <p className="field-helper">Use at least 8 characters for security.</p>
             </div>
 
             <button type="submit" className="registration-button">
-              Complete Registration
+              Sign Up
             </button>
-            </>
-            ) : (
-              <>
-              {/* Shelter/Organization Form */}
-              <div className="form-section">
-                <h3 className="section-title">Organization Information</h3>
-
-                <div className="form-group">
-                  <label htmlFor="organizationName">Organization Name *</label>
-                  <input
-                    type="text"
-                    id="organizationName"
-                    name="organizationName"
-                    value={formData.organizationName}
-                    onChange={handleChange}
-                    placeholder="Enter organization name"
-                    required
-                  />
-                </div>
-
-                <div className="form-row">
-                  <div className="form-group">
-                    <label htmlFor="organizationType">Organization Type *</label>
-                    <select
-                      id="organizationType"
-                      name="organizationType"
-                      value={formData.organizationType}
-                      onChange={handleChange}
-                      required
-                    >
-                      <option value="">Select type</option>
-                      <option value="homeless_shelter">Homeless Shelter</option>
-                      <option value="food_bank">Food Bank</option>
-                      <option value="community_center">Community Center</option>
-                      <option value="nonprofit">Non-Profit Organization</option>
-                      <option value="other">Other</option>
-                    </select>
-                  </div>
-
-                  <div className="form-group">
-                    <label htmlFor="registrationNumber">Registration Number</label>
-                    <input
-                      type="text"
-                      id="registrationNumber"
-                      name="registrationNumber"
-                      value={formData.registrationNumber}
-                      onChange={handleChange}
-                      placeholder="Business/Charity number"
-                    />
-                  </div>
-                </div>
-
-                <div className="form-row">
-                  <div className="form-group">
-                    <label htmlFor="capacity">Capacity</label>
-                    <input
-                      type="number"
-                      id="capacity"
-                      name="capacity"
-                      value={formData.capacity}
-                      onChange={handleChange}
-                      placeholder="Number of people served"
-                    />
-                  </div>
-
-                  <div className="form-group">
-                    <label htmlFor="phone">Phone Number *</label>
-                    <input
-                      type="tel"
-                      id="phone"
-                      name="phone"
-                      value={formData.phone}
-                      onChange={handleChange}
-                      placeholder="Organization phone"
-                      required
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div className="form-section">
-                <h3 className="section-title">Contact Person</h3>
-
-                <div className="form-group">
-                  <label htmlFor="contactPerson">Contact Person Name *</label>
-                  <input
-                    type="text"
-                    id="contactPerson"
-                    name="contactPerson"
-                    value={formData.contactPerson}
-                    onChange={handleChange}
-                    placeholder="Primary contact name"
-                    required
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label htmlFor="email">Email *</label>
-                  <input
-                    type="email"
-                    id="email"
-                    name="email"
-                    value={formData.email}
-                    onChange={handleChange}
-                    placeholder="Organization email"
-                    required
-                  />
-                </div>
-              </div>
-
-              <div className="form-section">
-                <h3 className="section-title">Location</h3>
-
-                <div className="form-group">
-                  <label htmlFor="address">Street Address *</label>
-                  <input
-                    type="text"
-                    id="address"
-                    name="address"
-                    value={formData.address}
-                    onChange={handleChange}
-                    placeholder="Organization address"
-                    required
-                  />
-                </div>
-
-                <div className="form-row">
-                  <div className="form-group">
-                    <label htmlFor="city">City *</label>
-                    <input
-                      type="text"
-                      id="city"
-                      name="city"
-                      value={formData.city}
-                      onChange={handleChange}
-                      placeholder="City"
-                      required
-                    />
-                  </div>
-
-                  <div className="form-group">
-                    <label htmlFor="postalCode">Postal Code *</label>
-                    <input
-                      type="text"
-                      id="postalCode"
-                      name="postalCode"
-                      value={formData.postalCode}
-                      onChange={handleChange}
-                      placeholder="Postal code"
-                      required
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div className="form-section">
-                <h3 className="section-title">Services</h3>
-
-                <div className="form-group">
-                  <label htmlFor="servicesOffered">Services Offered *</label>
-                  <textarea
-                    id="servicesOffered"
-                    name="servicesOffered"
-                    value={formData.servicesOffered}
-                    onChange={handleChange}
-                    placeholder="Describe the services your organization offers..."
-                    rows="4"
-                    required
-                  />
-                </div>
-              </div>
-
-              <div className="form-section">
-                <h3 className="section-title">Account Security</h3>
-
-                <div className="form-row">
-                  <div className="form-group">
-                    <label htmlFor="password">Password *</label>
-                    <input
-                      type="password"
-                      id="password"
-                      name="password"
-                      value={formData.password}
-                      onChange={handleChange}
-                      placeholder="Create password"
-                      required
-                    />
-                  </div>
-
-                  <div className="form-group">
-                    <label htmlFor="confirmPassword">Confirm Password *</label>
-                    <input
-                      type="password"
-                      id="confirmPassword"
-                      name="confirmPassword"
-                      value={formData.confirmPassword}
-                      onChange={handleChange}
-                      placeholder="Confirm password"
-                      required
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <button type="submit" className="registration-button">
-                Complete Registration
-              </button>
-              </>
-            )}
           </form>
 
           <div className="registration-footer">
             <p>
               Already have an account?{" "}
-              <button
-                type="button"
-                onClick={() => navigate("/login")}
-                className="footer-link"
-              >
+              <button type="button" className="footer-link" onClick={() => navigate("/login")}>
                 Log In
               </button>
             </p>

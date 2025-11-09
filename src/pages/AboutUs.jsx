@@ -13,7 +13,7 @@ const AboutUs = () => {
     } else if (itemName === "Home") {
       navigate("/");
     } else if (itemName === "Map") {
-      navigate("/");
+      navigate("/"); // Map button should return to the main App map view
     } else if (itemName === "About Us") {
       navigate("/about");
     }
