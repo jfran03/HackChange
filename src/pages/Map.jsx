@@ -1,11 +1,10 @@
-import { BrowserRouter as Router, Routes, Route, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
+import { personIcon, houseIcon, alertIcon } from '../components/CustomIcon';
 import AlertMarker from "../components/AlertMarker";
 
 const MapView = () => {
-  const navigate = useNavigate();
   const [map, setMap] = useState(null);
   const [alertMarker, showMarker] = useState(false);
   const [markerPos, setMarkerPos] = useState(null);
@@ -21,9 +20,12 @@ const MapView = () => {
       navigator.geolocation.getCurrentPosition((pos) => {
         const { latitude, longitude } = pos.coords;
         m.setView([latitude, longitude], 14);
-        L.marker([latitude, longitude])
+
+        L.marker([latitude, longitude], { icon: personIcon })
           .addTo(m)
-          .bindPopup("📍 You are here");
+          .bindPopup("📍 You are here")
+          .openPopup();
+    
       });
     }
 
@@ -37,7 +39,7 @@ const MapView = () => {
     showMarker(false);
 
     if (type !== "Cancel" && markerPos) {
-      L.marker([markerPos.lat, markerPos.lng])
+      L.marker([markerPos.lat, markerPos.lng], { icon: alertIcon })
         .addTo(map)
         .bindPopup(`🚨 ${type} reported here.`)
         .openPopup();
