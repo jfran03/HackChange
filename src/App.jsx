@@ -81,7 +81,7 @@ const MapView = () => {
     <div>
       {/* Sidebar + Alert system */}
       <Sidebar onNavigate={handleNavigation} />
-      <AlertMarker onSelect={specifyAlert} show={alertMarker} />
+      {alertMarker && map && <AlertMarker map={map} position={markerPos} onSelect={specifyAlert} />}
 
       {/* Map container */}
       <div
