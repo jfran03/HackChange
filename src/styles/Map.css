@@ -95,3 +95,64 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* Alert Popup Styles */
+.alert-popup {
+  font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: #1f2933;
+  font-size: 0.9rem;
+  max-width: 280px;
+  padding: 0.75rem;
+}
+
+.alert-popup-header {
+  font-size: 1rem;
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #e4e7eb;
+}
+
+.alert-popup-shelter {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 0.5rem;
+  background: #f0f4f8;
+  border-radius: 6px;
+  border-left: 3px solid #3b82f6;
+}
+
+.alert-popup-shelter-title {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #486581;
+  margin-bottom: 0.25rem;
+}
+
+.alert-popup-shelter-name {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #102a43;
+}
+
+.alert-popup-shelter-address {
+  font-size: 0.8rem;
+  color: #486581;
+  line-height: 1.3;
+}
+
+.alert-popup-shelter-distance {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #3b82f6;
+  margin-top: 0.25rem;
+}
+
+.alert-popup-no-shelter {
+  font-size: 0.85rem;
+  color: #829ab1;
+  font-style: italic;
+  padding: 0.5rem;
+}

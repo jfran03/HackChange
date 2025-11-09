@@ -5,6 +5,8 @@ import { personIcon, alertIcon, houseIcon } from "../components/CustomIcon";
 import AlertMarker from "../components/AlertMarker";
 import { createAlert, fetchAlerts } from "../lib/alerts";
 import { fetchShelters } from "../lib/overpass";
+import { supabase } from "../lib/supabaseClient";
+import "../styles/Map.css";
 
 const formatDistance = (meters) => {
   if (typeof meters !== "number" || Number.isNaN(meters)) {
@@ -41,7 +43,6 @@ const serviceText = (value, serviceName) => {
 
   return `${serviceName} availability unknown`;
 };
-import { supabase } from "../lib/supabaseClient";
 
 const MapView = () => {
   const [map, setMap] = useState(null);
@@ -258,14 +259,60 @@ const MapView = () => {
       console.log("[Map] Rendering alert:", alert);
       if (alert.latitude && alert.longitude) {
         console.log("[Map] Adding marker at:", alert.latitude, alert.longitude);
+
+        // Find closest shelter to this alert
+        let closestShelter = null;
+        let minDistance = Infinity;
+
+        shelters.forEach((shelter) => {
+          if (shelter.latitude && shelter.longitude) {
+            const distance = map.distance(
+              [alert.latitude, alert.longitude],
+              [shelter.latitude, shelter.longitude]
+            );
+            if (distance < minDistance) {
+              minDistance = distance;
+              closestShelter = shelter;
+            }
+          }
+        });
+
+        // Build popup HTML with alert info and closest shelter
+        let popupHtml = `
+          <div class="alert-popup">
+            <div class="alert-popup-header">
+              <strong>🚨 ${escapeHtml(alert.type)}</strong>
+            </div>
+        `;
+
+        if (closestShelter) {
+          const distanceText = formatDistance(minDistance);
+          popupHtml += `
+            <div class="alert-popup-shelter">
+              <div class="alert-popup-shelter-title">📍 Nearest Shelter:</div>
+              <div class="alert-popup-shelter-name">${escapeHtml(closestShelter.name)}</div>
+              ${closestShelter.address ? `<div class="alert-popup-shelter-address">${escapeHtml(closestShelter.address)}</div>` : ""}
+              ${distanceText ? `<div class="alert-popup-shelter-distance">${distanceText}</div>` : ""}
+            </div>
+          `;
+        } else {
+          popupHtml += `
+            <div class="alert-popup-no-shelter">
+              No nearby shelters found in current view.
+            </div>
+          `;
+        }
+
+        popupHtml += `</div>`;
+
         L.marker([alert.latitude, alert.longitude], { icon: alertIcon })
           .addTo(alertLayerRef.current)
-          .bindPopup(`🚨 ${alert.type} reported here.`);
+          .bindPopup(popupHtml);
       } else {
         console.warn("[Map] Alert missing coordinates:", alert);
       }
     });
-  }, [alerts, map]);
+  }, [alerts, map, shelters]);
 
   useEffect(() => {
     if (!map || !shelterLayerRef.current) return;
