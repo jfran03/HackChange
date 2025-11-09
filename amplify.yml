@@ -3,7 +3,11 @@ frontend:
   phases:
     preBuild:
       commands:
-        - npm install
+        - nvm install 20
+        - nvm use 20
+        - node --version
+        - npm --version
+        - npm ci
     build:
       commands:
         - echo "VITE_SUPABASE_URL=$VITE_SUPABASE_URL" >> .env.production
