@@ -15,57 +15,130 @@ const resourceLinks = [
   },
 ];
 
+const systemPrompt = `You are a compassionate, trauma-informed safety assistant named Beacon. Keep replies concise,
+actionable, and supportive. When appropriate, remind the user about emergency services (911) and the 988
+Suicide & Crisis Lifeline. Encourage seeking professional help and provide practical safety planning tips.
+If the user requests resources, recommend trusted U.S. organizations and government services.`;
+
+const buildBackendUrl = () => {
+  const raw = import.meta.env.VITE_BACKEND_URL;
+
+  if (typeof raw === "string" && raw.trim().length > 0) {
+    return raw.trim().replace(/\/$/, "");
+  }
+
+  if (typeof window !== "undefined" && window.location?.origin) {
+    return window.location.origin.replace(/\/$/, "");
+  }
+
+  return "";
+};
+
 const ChatWidget = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [inputValue, setInputValue] = useState("");
+  const [isSending, setIsSending] = useState(false);
   const [messages, setMessages] = useState([
     {
       id: "welcome",
       sender: "bot",
-      text: "Hi there! I'm here to help you find safety resources. How can I assist you today?",
+      role: "assistant",
+      text: "Hi there! I'm Beacon, your safety assistant. How can I support you today?",
     },
   ]);
 
-  const helpKeywords = useMemo(
-    () => ["help", "resources", "support", "danger", "emergency", "unsafe"],
-    []
-  );
+  const backendUrl = useMemo(() => buildBackendUrl(), []);
 
-  const generateBotReply = (userMessage) => {
-    const normalized = userMessage.toLowerCase();
-    const needsHelp = helpKeywords.some((keyword) => normalized.includes(keyword));
+  const appendBotFallback = (errorMessage) => {
+    const fallbackText =
+      `${errorMessage} Hello! you can reach out to these resources: ` +
+      resourceLinks
+        .map((resource) => `${resource.label}: ${resource.description}`)
+        .join(" ");
 
-    if (needsHelp) {
-      return (
-        "I understand this might be urgent. Here are some trusted resources: " +
-        resourceLinks
-          .map((resource) => `${resource.label}: ${resource.description}`)
-          .join(" ")
-      );
-    }
-
-    return "Thank you for sharing. I can connect you with resources or answer questions about staying safe—just let me know what you need.";
+    setMessages((prev) => [
+      ...prev,
+      {
+        id: `bot-${Date.now()}`,
+        sender: "bot",
+        role: "assistant",
+        text: fallbackText,
+      },
+    ]);
   };
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
     const trimmed = inputValue.trim();
-    if (!trimmed) return;
+    if (!trimmed || isSending) return;
 
     const userMessage = {
       id: `user-${Date.now()}`,
       sender: "user",
+      role: "user",
       text: trimmed,
     };
 
-    const botMessage = {
-      id: `bot-${Date.now()}`,
-      sender: "bot",
-      text: generateBotReply(trimmed),
-    };
+    const conversation = [...messages, userMessage];
 
-    setMessages((prev) => [...prev, userMessage, botMessage]);
+
+    setMessages((prev) => [...prev, userMessage]);
     setInputValue("");
+    setIsSending(true);
+
+    try {
+      const payload = {
+        messages: [
+          { role: "system", content: systemPrompt },
+          ...conversation.slice(-8).map((message) => ({
+            role: message.role,
+            content: message.text,
+          })),
+        ],
+      };
+
+      const response = await fetch(`${backendUrl}/api/chat/completions`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        throw new Error("");
+      }
+
+      const data = await response.json();
+      const replyText = data?.reply?.trim();
+
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: `bot-${Date.now()}`,
+          sender: "bot",
+          role: "assistant",
+          text:
+            replyText && replyText.length > 0
+              ? replyText
+              : "I'm sorry, I couldn't generate a helpful response right now. Please consider reaching out to 911 in emergencies or the 988 Suicide & Crisis Lifeline.",
+        },
+      ]);
+    } catch (error) {
+      console.error("Chat assistant error", error);
+
+      const normalizedMessage = (() => {
+        if (error instanceof Error) {
+          if (error.message === "Failed to fetch") {
+            return "We couldn't connect to the safety assistant just now.";
+          }
+          return error.message;
+        }
+        return "Something went wrong while contacting the safety assistant.";
+      })();
+
+      appendBotFallback(normalizedMessage);
+    } finally {
+      setIsSending(false);
+    }
   };
 
   return (
@@ -90,6 +163,11 @@ const ChatWidget = () => {
                 {message.text}
               </div>
             ))}
+            {isSending && (
+              <div className="chat-widget-message chat-widget-message-bot">
+                Beacon is thinking...
+              </div>
+            )}
           </div>
           <form className="chat-widget-input" onSubmit={handleSubmit}>
             <input
@@ -97,8 +175,11 @@ const ChatWidget = () => {
               placeholder="Type your message..."
               value={inputValue}
               onChange={(event) => setInputValue(event.target.value)}
+              disabled={isSending}
             />
-            <button type="submit">Send</button>
+            <button type="submit" disabled={isSending}>
+              {isSending ? "Sending..." : "Send"}
+            </button>
           </form>
         </div>
       )}
