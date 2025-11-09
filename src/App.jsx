@@ -73,9 +73,9 @@ const MapView = () => {
     } else if (itemName === "Member") {
       navigate("/member");
     } else if (itemName === "Home") {
-      navigate("/about");
-    } else if (itemName === "Map") {
       navigate("/");
+    } else if (itemName === "Map") {
+      navigate("/"); // Map button should always bring users to the main App map view
     } else if (itemName === "About Us") {
       navigate("/about");
     }
