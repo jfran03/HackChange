@@ -3,7 +3,9 @@
   justify-content: center;
   align-items: center;
   min-height: 100vh;
-  background-color: #111827;
+  width: 100%;
+  flex: 1;
+  background: linear-gradient(to right, #588cde, #8396ac);
   padding: 2rem;
 }
 
@@ -14,8 +16,7 @@
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
   width: 100%;
   max-width: 800px;
-  max-height: 90vh;
-  overflow-y: auto;
+  height: auto;
 }
 
 .member-title {
@@ -124,7 +125,7 @@
 .form-group input,
 .form-group select,
 .form-group textarea {
-  padding: 0.875rem 1rem;
+  padding: 1rem 0.2rem;
   border: 2px solid #374151;
   border-radius: 8px;
   font-size: 1rem;

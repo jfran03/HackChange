@@ -25,7 +25,7 @@ const AboutUs = () => {
       <div className="aboutus-container">
         <div className="aboutus-content">
           <div className="aboutus-text">
-            <h1 className="aboutus-title">About STREET AID</h1>
+            <h1 className="aboutus-title">ABOUT STREET AID</h1>
 
             <section className="aboutus-section">
               <h2>Our Mission</h2>
