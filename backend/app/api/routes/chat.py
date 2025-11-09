@@ -1,7 +1,5 @@
 from typing import List, Literal, Optional
-
 import logging
-
 from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel, Field
 from openai import AsyncOpenAI
